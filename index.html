@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CampusPool | Car pooling for LPU, Jalandhar &amp; Phagwara</title>
+
+  <!-- Fonts: Manrope (body) + Syne (italic headings) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet" />
+
+  <!-- Leaflet (free map library, OpenStreetMap data) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ============ HEADER ============ -->
+  <header class="site-header">
+    <a href="#top" class="logo">CampusPool</a>
+    <nav>
+      <a href="#rides">Find a ride</a>
+      <a href="#how">How it works</a>
+      <a href="#bookings">My bookings <span id="bookingCount" class="count">0</span></a>
+    </nav>
+  </header>
+
+  <main id="top">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <div class="hero-text">
+        <h1>
+          <span class="line">Share the ride</span>
+          <span class="line">to campus.</span>
+        </h1>
+        <p class="sub">Student car pools between Jalandhar, Phagwara and Lovely Professional University. Pay only for your seat.</p>
+
+        <div class="finder" id="finder">
+          <div class="toggle" role="group" aria-label="Direction">
+            <button class="active" data-dir="to" type="button">To college</button>
+            <button data-dir="from" type="button">From college</button>
+          </div>
+          <label class="field">
+            <span>Your area</span>
+            <select id="areaSelect"></select>
+          </label>
+          <a href="#rides" class="btn primary">See rides</a>
+        </div>
+      </div>
+
+      <!-- Animated route: car drives from Jalandhar to LPU -->
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 520 360" xmlns="http://www.w3.org/2000/svg">
+          <path id="roadPath" d="M60 290 C 160 300, 190 120, 300 150 S 440 80, 460 70"
+                fill="none" stroke="#262f3d" stroke-width="22" stroke-linecap="round" />
+          <path d="M60 290 C 160 300, 190 120, 300 150 S 440 80, 460 70"
+                fill="none" stroke="#8c9bff" stroke-width="2" stroke-dasharray="8 10" class="road-dash" />
+
+          <!-- start node -->
+          <circle cx="60" cy="290" r="9" fill="#141922" stroke="#8c9bff" stroke-width="3" />
+          <text x="60" y="326" fill="#8a96a8" font-size="14" text-anchor="middle" font-family="Manrope">Jalandhar</text>
+
+          <!-- campus node with pulse -->
+          <circle cx="460" cy="70" r="9" fill="#5eead4" />
+          <circle cx="460" cy="70" r="9" fill="none" stroke="#5eead4" stroke-width="2" class="pulse" />
+          <text x="460" y="106" fill="#8a96a8" font-size="14" text-anchor="middle" font-family="Manrope">LPU, Phagwara</text>
+
+          <!-- the car -->
+          <g>
+            <rect x="-20" y="-10" width="40" height="18" rx="7" fill="#e8edf4" />
+            <rect x="-9" y="-16" width="20" height="9" rx="4" fill="#8c9bff" />
+            <circle cx="-10" cy="9" r="4" fill="#0c0f14" />
+            <circle cx="10" cy="9" r="4" fill="#0c0f14" />
+            <animateMotion dur="9s" repeatCount="indefinite" rotate="auto">
+              <mpath href="#roadPath" />
+            </animateMotion>
+          </g>
+        </svg>
+      </div>
+    </section>
+
+    <!-- ============ RIDES + MAP ============ -->
+    <section class="rides" id="rides">
+      <div class="section-head">
+        <h2>Available rides</h2>
+        <p id="resultInfo" class="muted"></p>
+      </div>
+
+      <div class="rides-grid">
+        <!-- left: list of rides -->
+        <div id="rideList" class="ride-list"></div>
+
+        <!-- right: map + detail panel -->
+        <div class="side">
+          <div id="map" aria-label="Map of the ride route"></div>
+
+          <div id="detail" class="detail">
+            <p class="muted empty">Pick a ride to see its route, fare and co-riders.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ HOW IT WORKS ============ -->
+    <section class="how" id="how">
+      <h2>How it works</h2>
+      <ol>
+        <li>
+          <h3>Choose a ride</h3>
+          <p>Select your area and direction. Every ride shows its route, timing and seats left.</p>
+        </li>
+        <li>
+          <h3>Pick your stop</h3>
+          <p>The fare depends on how far your stop is from campus. See co-riders on the map.</p>
+        </li>
+        <li>
+          <h3>Verify with OTP</h3>
+          <p>Enter your mobile number, type the 6-digit OTP, and your seat is confirmed.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ============ MY BOOKINGS ============ -->
+    <section class="bookings" id="bookings">
+      <h2>My bookings</h2>
+      <div id="bookingList" class="booking-list"></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>CampusPool is a college project. It covers Jalandhar, Phagwara and LPU only.</p>
+  </footer>
+
+  <!-- ============ BOOKING MODAL (3 steps) ============ -->
+  <div id="modal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="close" id="modalClose" aria-label="Close">&times;</button>
+
+      <!-- Step 1: details -->
+      <div class="step" data-step="1">
+        <h3 id="modalTitle">Book your seat</h3>
+        <p class="muted" id="modalSummary"></p>
+
+        <label class="field">
+          <span>Full name</span>
+          <input id="nameInput" type="text" maxlength="40" placeholder="e.g. Simran Kaur" autocomplete="name" />
+        </label>
+        <label class="field">
+          <span>Mobile number</span>
+          <div class="phone">
+            <b>+91</b>
+            <input id="phoneInput" type="tel" inputmode="numeric" maxlength="10" placeholder="10-digit number" autocomplete="tel-national" />
+          </div>
+        </label>
+        <label class="field">
+          <span>Number of seats</span>
+          <select id="seatsInput"></select>
+        </label>
+
+        <div class="total-row"><span>Total fare</span><strong id="modalTotal">₹0</strong></div>
+        <p class="error" id="err1"></p>
+        <button class="btn primary full" id="sendOtpBtn" type="button">Send OTP</button>
+      </div>
+
+      <!-- Step 2: OTP -->
+      <div class="step" data-step="2" hidden>
+        <h3>Enter the OTP</h3>
+        <p class="muted">We sent a 6-digit code to <b id="otpPhone"></b>.</p>
+        <div class="otp-boxes" id="otpBoxes"></div>
+        <p class="error" id="err2"></p>
+        <button class="btn primary full" id="verifyBtn" type="button">Verify &amp; confirm</button>
+        <p class="resend muted">
+          <span id="timerText"></span>
+          <button class="link" id="resendBtn" type="button" disabled>Resend OTP</button>
+        </p>
+      </div>
+
+      <!-- Step 3: ticket -->
+      <div class="step" data-step="3" hidden>
+        <div class="tick">
+          <svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" /><path d="M14 27l8 8 16-17" /></svg>
+        </div>
+        <h3>Seat confirmed</h3>
+        <div class="ticket" id="ticket"></div>
+        <button class="btn primary full" id="doneBtn" type="button">View my bookings</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Demo "SMS" notification (see script.js, sendOtp) -->
+  <div id="sms" class="sms" hidden>
+    <div class="sms-head"><span>Messages</span><button id="smsClose" aria-label="Dismiss">&times;</button></div>
+    <p id="smsBody"></p>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
